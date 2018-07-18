@@ -314,6 +314,8 @@ var Datetime = createClass({
 			date
 			;
 
+		if (typeof currentDate === 'undefined') return null;
+
 		if (target.className.indexOf('rdtDay') !== -1) {
 			if (target.className.indexOf('rdtNew') !== -1)
 				modifier = 1;
