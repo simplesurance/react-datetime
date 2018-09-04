@@ -318,7 +318,7 @@ var Datetime = createClass({
 			modifier = 0,
 			viewDate = this.state.viewDate,
 			currentDate = this.state.selectedDate || viewDate,
-			date
+			date = viewDate.clone()
 			;
 
 		if (typeof currentDate === 'undefined') return null;
