@@ -1,0 +1,25 @@
+From 3c0c9fdc9e0064056aaf5962cbacb3ad8920f16d Mon Sep 17 00:00:00 2001
+From: GO <oxinosg@gmail.com>
+Date: Wed, 18 Jul 2018 12:31:50 +0200
+Subject: [PATCH 2/3] undefined check
+
+---
+ DateTime.js | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/DateTime.js b/DateTime.js
+index d02c023..be001d0 100644
+--- a/DateTime.js
++++ b/DateTime.js
+@@ -321,6 +321,8 @@ var Datetime = createClass({
+ 			date
+ 			;
+ 
++		if (typeof currentDate === 'undefined') return null;
++
+ 		if (target.className.indexOf('rdtDay') !== -1) {
+ 			if (target.className.indexOf('rdtNew') !== -1)
+ 				modifier = 1;
+-- 
+2.23.0
+

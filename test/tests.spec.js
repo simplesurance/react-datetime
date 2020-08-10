@@ -2,6 +2,7 @@
 
 import React from 'react'; // eslint-disable-line no-unused-vars
 import moment from 'moment';
+import _momentTimezone from 'moment-timezone'; // eslint-disable-line no-unused-vars
 import utils from './testUtils';
 import Enzyme from 'enzyme';
 import Adapter from 'enzyme-adapter-react-15';
@@ -64,11 +65,14 @@ describe('Datetime', () => {
 	});
 
 	it('persistent valid months going monthView->yearView->monthView', () => {
+		const oldNow = Date.now;
+		Date.now = () => new Date('2018-06-01T00:00:00').getTime();
+		
 		const dateBefore = '2018-06-01';
 		const component = utils.createDatetime({ viewMode: 'months', isValidDate: (current) =>
 				current.isBefore(moment(dateBefore, 'YYYY-MM-DD'))
 			});
-
+		
 		expect(utils.isMonthView(component)).toBeTruthy();
 		expect(utils.getNthMonth(component, 4).hasClass('rdtDisabled')).toEqual(false);
 		expect(utils.getNthMonth(component, 5).hasClass('rdtDisabled')).toEqual(true);
@@ -83,6 +87,8 @@ describe('Datetime', () => {
 		utils.clickNthYear(component, 9);
 		expect(utils.getNthMonth(component, 4).hasClass('rdtDisabled')).toEqual(false);
 		expect(utils.getNthMonth(component, 5).hasClass('rdtDisabled')).toEqual(true);
+
+		Date.now = oldNow;
 	});
 
 	it('step through views', () => {
@@ -280,29 +286,6 @@ describe('Datetime', () => {
 		expect(component.find('.rdtDay.rdtToday').text()).toEqual('19');
 	});
 
-	// Proof of bug [FIXED]
-	it('should show correct selected month when traversing view modes', () => {
-		const date = new Date(2000, 4, 3, 2, 2, 2, 2),
-			component = utils.createDatetime({ viewMode: 'days', defaultValue: date });
-
-		utils.openDatepicker(component);
-
-		// Go to month view
-		utils.clickOnElement(component.find('.rdtSwitch'));
-
-		// Here the selected month is _May_, which is correct
-		expect(component.find('.rdtMonth .rdtActive').text()).toEqual('May');
-
-		// Go to year view
-		utils.clickOnElement(component.find('.rdtSwitch'));
-
-		// Click the selected year (2000)
-		utils.clickNthYear(component, 1);
-
-		// The selected month is now _January_
-		expect(component.find('.rdtMonth .rdtActive').text()).toEqual('May');
-	});
-
 	describe('with custom props', () => {
 		it('input=false', () => {
 			const component = utils.createDatetime({ input: false });
@@ -382,7 +365,7 @@ describe('Datetime', () => {
 		});
 
 		it('className -> type string array', () => {
-			const component = utils.createDatetime({ className: ['custom-class1', 'custom-class2'] });
+			const component = utils.createDatetimeShallow({ className: ['custom-class1', 'custom-class2'] });
 			expect(component.find('.custom-class1').length).toEqual(1);
 			expect(component.find('.custom-class2').length).toEqual(1);
 		});
@@ -524,9 +507,9 @@ describe('Datetime', () => {
 			expect(utils.isOpen(component)).toBeTruthy();
 		});
 
-		it('disableOnClickOutside=true', () => {
+		it('disableCloseOnClickOutside=true', () => {
 			const date = new Date(2000, 0, 15, 2, 2, 2, 2),
-				component = utils.createDatetime({ value: date, disableOnClickOutside: true });
+				component = utils.createDatetime({ value: date, disableCloseOnClickOutside: true });
 
 			expect(utils.isOpen(component)).toBeFalsy();
 			utils.openDatepicker(component);
@@ -536,9 +519,9 @@ describe('Datetime', () => {
 			expect(utils.isOpen(component)).toBeTruthy();
 		});
 
-    it('disableOnClickOutside=false', () => {
+    it('disableCloseOnClickOutside=false', () => {
 			const date = new Date(2000, 0, 15, 2, 2, 2, 2),
-				component = utils.createDatetime({ value: date, disableOnClickOutside: false });
+				component = utils.createDatetime({ value: date, disableCloseOnClickOutside: false });
 
 			expect(utils.isOpen(component)).toBeFalsy();
 			utils.openDatepicker(component);
@@ -879,6 +862,34 @@ describe('Datetime', () => {
 				});
 			});
 
+			it('displayTimeZone -> value should change format (undefined->America/New_York)', () => {
+				const date = new Date(2000, 0, 15, 2, 2, 2, 2),
+					momentDate = moment(date),
+					component = utils.createDatetime({ value: momentDate }),
+					displayTimeZone = (moment.tz.guess() === 'America/New_York' ? 'America/Los_Angeles' : 'America/New_York');
+
+				const valueBefore = utils.getInputValue(component);
+				component.setProps({ displayTimeZone: displayTimeZone }, () => {
+					const valueAfter = utils.getInputValue(component);
+
+					expect(valueBefore).not.toEqual(valueAfter);
+				});
+			});
+
+			it('displayTimeZone -> value should change format (America/New_York->undefined)', () => {
+				const date = new Date(2000, 0, 15, 2, 2, 2, 2),
+					momentDate = moment(date),
+					displayTimeZone = (moment.tz.guess() === 'America/New_York' ? 'America/Los_Angeles' : 'America/New_York'),
+					component = utils.createDatetime({ value: momentDate, displayTimeZone: displayTimeZone });
+
+				const valueBefore = utils.getInputValue(component);
+				component.setProps({ displayTimeZone: undefined }, () => {
+					const valueAfter = utils.getInputValue(component);
+
+					expect(valueBefore).not.toEqual(valueAfter);
+				});
+			});
+
 			it('locale -> picker should change language (viewMode=days)', () => {
 				const component = utils.createDatetime({ viewMode: 'days', locale: 'nl' }),
 					weekdaysBefore = component.find('.rdtDays .dow').map((element) =>
@@ -1058,7 +1069,7 @@ describe('Datetime', () => {
 			});
 
 			it('when selecting month', () => {
-				const date = Date.UTC(2000, 0, 15, 2, 2, 2, 2),
+				const date = _momentTimezone.tz('2000-03-15T02:02:02.002Z', 'UTC'),
 					onChangeFn = jest.fn(),
 					component = utils.createDatetime({ defaultValue: date, dateFormat: 'YYYY-MM', onChange: onChangeFn });
 
@@ -1195,6 +1206,26 @@ describe('Datetime', () => {
 				strDateUTC = momentDateUTC.format('L') + ' ' + momentDateUTC.format('LT'),
 				component = utils.createDatetime({ value: strDateUTC, utc: true });
 			expect(utils.getInputValue(component)).toEqual(strDateUTC);
+		});
+
+		it('TZ value from local moment', () => {
+			const date = new Date(2000, 0, 15, 2, 2, 2, 2),
+        displayTimeZone = 'America/New_York',
+				momentDate = moment(date),
+				momentDateTZ = moment.tz(date, displayTimeZone),
+				strDateTZ = momentDateTZ.format('L') + ' ' + momentDateTZ.format('LT'),
+				component = utils.createDatetime({ value: momentDate, displayTimeZone: displayTimeZone });
+			expect(utils.getInputValue(component)).toEqual(strDateTZ);
+		});
+
+		it('TZ value from UTC moment', () => {
+			const date = new Date(2000, 0, 15, 2, 2, 2, 2),
+				displayTimeZone = 'America/New_York',
+				momentDateUTC = moment.utc(date),
+				momentDateTZ = moment.tz(date, displayTimeZone),
+				strDateTZ = momentDateTZ.format('L') + ' ' + momentDateTZ.format('LT'),
+				component = utils.createDatetime({ value: momentDateUTC, displayTimeZone: displayTimeZone });
+			expect(utils.getInputValue(component)).toEqual(strDateTZ);
 		});
 
 		it('invalid string value', (done) => {

@@ -1,0 +1,25 @@
+From cbb0ca92875c3547ae191784ace58b3658f8a803 Mon Sep 17 00:00:00 2001
+From: GO <oxinosg@gmail.com>
+Date: Tue, 4 Sep 2018 12:05:59 +0200
+Subject: [PATCH 3/3] default data value
+
+---
+ DateTime.js | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/DateTime.js b/DateTime.js
+index be001d0..27556dd 100644
+--- a/DateTime.js
++++ b/DateTime.js
+@@ -318,7 +318,7 @@ var Datetime = createClass({
+ 			modifier = 0,
+ 			viewDate = this.state.viewDate,
+ 			currentDate = this.state.selectedDate || viewDate,
+-			date
++			date = viewDate.clone()
+ 			;
+ 
+ 		if (typeof currentDate === 'undefined') return null;
+-- 
+2.23.0
+
